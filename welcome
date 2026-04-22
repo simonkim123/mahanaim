@@ -1,0 +1,99 @@
+code
+Html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청년부 출석 체크</title>
+    <style>
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 80%; max-width: 400px; }
+        h1 { color: #1a73e8; font-size: 1.5rem; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; }
+        .welcome { font-weight: bold; color: #333; margin-bottom: 10px; }
+        .status { color: #34a853; margin-top: 10px; font-weight: bold; }
+        #loading { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="setup-area" style="display: none;">
+        <h1>첫 방문을 환영합니다!</h1>
+        <p>출석 체크를 위해 이름을 입력해주세요.</p>
+        <input type="text" id="userName" placeholder="이름을 입력하세요">
+        <button onclick="saveName()">등록하고 출석하기</button>
+    </div>
+
+    <div id="attendance-area" style="display: none;">
+        <h1>반가워요, <span id="display-name" class="welcome"></span>님!</h1>
+        <div id="loading">출석 기록 중...</div>
+        <div id="status" class="status"></div>
+    </div>
+</div>
+
+<script>
+    // ⚠️ 아래 정보만 본인의 구글 폼 정보로 수정하세요!
+    const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse";
+    const ENTRY_ID = "entry.1234567"; // 아까 메모한 entry ID
+
+    const setupArea = document.getElementById('setup-area');
+    const attendanceArea = document.getElementById('attendance-area');
+    const displayName = document.getElementById('display-name');
+    const statusDiv = document.getElementById('status');
+    const loadingDiv = document.getElementById('loading');
+
+    // 1. 페이지 로드 시 등록된 이름이 있는지 확인
+    window.onload = function() {
+        const savedName = localStorage.getItem('church_user_name');
+        if (savedName) {
+            showAttendance(savedName);
+        } else {
+            setupArea.style.display = 'block';
+        }
+    }
+
+    // 2. 이름 저장 및 출석
+    function saveName() {
+        const name = document.getElementById('userName').value;
+        if (!name) { alert("이름을 입력해주세요!"); return; }
+        
+        localStorage.setItem('church_user_name', name);
+        setupArea.style.display = 'none';
+        showAttendance(name);
+    }
+
+    // 3. 실제 출석 처리 (구글 폼으로 전송)
+    function showAttendance(name) {
+        attendanceArea.style.display = 'block';
+        displayName.innerText = name;
+        loadingDiv.style.display = 'block';
+
+        // 구글 폼으로 데이터 전송 (CORS 이슈 우회하기 위해 이미지 객체 또는 숨겨진 폼 사용 가능)
+        // 여기서는 가장 간단한 fetch 방식을 사용합니다. (no-cors 모드)
+        const formData = new FormData();
+        formData.append(ENTRY_ID, name);
+
+        fetch(GOOGLE_FORM_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: formData
+        }).then(() => {
+            loadingDiv.style.display = 'none';
+            statusDiv.innerText = "✅ 출석 체크가 완료되었습니다!";
+            
+            // 3초 후 자동 창 닫기 안내 (선택사항)
+            setTimeout(() => {
+                statusDiv.innerText += "\n오늘 예배를 통해 큰 은혜 받으세요!";
+            }, 1000);
+        }).catch(err => {
+            statusDiv.innerText = "❌ 오류가 발생했습니다. 다시 시도해주세요.";
+            console.error(err);
+        });
+    }
+</script>
+
+</body>
+</html>
